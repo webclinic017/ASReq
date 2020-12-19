@@ -4,7 +4,7 @@ from ssl import create_default_context, SSLContext
 from json import loads as json_loads
 from aiohttp_socks import ProxyConnector
 from threading import Thread, currentThread
-from typing import List, Optional, Union, Any, Dict, Tuple
+from typing import List, Optional, Union, Any, Dict
 
 
 class Response:
@@ -285,7 +285,7 @@ def put(url: str, params: Union[dict, tuple] = None, data: Union[dict, str] = No
 
 
 async def __exec_req(sem: asyncio.Semaphore, sess: ClientSession, req: Request, ssl: SSLContext, include_content: bool,
-                     exception_handler, success_handler) -> Response:
+                     exception_handler, success_handler, verify_ssl: bool) -> Response:
     """
     Executes one request asynchronously. When used in asyncio.gather() makes requests go really fast.
     Do not use it yourself. Use map() instead
@@ -296,15 +296,17 @@ async def __exec_req(sem: asyncio.Semaphore, sess: ClientSession, req: Request, 
     :param req: Request object
     :param ssl: Generated SSL context
     :param include_content: Whether include response content (+decoded Text) or not
-    :param exception_handler: Function to report a failed (with exceptions) response (passes requests&exception as parameter)
+    :param exception_handler: Function to report a failed (with exceptions) response (passes requests&exception as
+      parameter)
     :param success_handler: Function to report a succeeded (with no exceptions) response (passes Response object as
      parameter)
+    :param verify_ssl: Must SSLContext be generated to verify an SSL connection or not
     :return: Response object
     """
     try:
         async with sem, sess.request(method=req.method, url=req.url, params=req.params, data=req.data, json=req.json,
-                                     headers=req.headers,
-                                     proxy=req.proxies, skip_auto_headers=req.skip_headers, ssl=ssl) as resp:
+                                     headers=req.headers, proxy=req.proxies, skip_auto_headers=req.skip_headers,
+                                     ssl=ssl, verify_ssl=verify_ssl) as resp:
             # Semaphore used to control amount of connections per once. Make request and perform actions
             content = None
             if include_content:
@@ -320,9 +322,7 @@ async def __exec_req(sem: asyncio.Semaphore, sess: ClientSession, req: Request, 
 
 
 async def __make_reqs(reqs: List[Request], size: int, timeout: Optional[int], include_content: bool, exception_handler,
-                      success_handler) -> Tuple[
-    Union[BaseException, Any], Union[BaseException, Any], Union[BaseException, Any], Union[BaseException, Any], Union[
-        BaseException, Any]]:
+                      success_handler, verify_ssl: bool) -> List[Response]:
     """
     Asynchronous runner for map() function. Do not start it yourself, use map() instead
 
@@ -333,14 +333,17 @@ async def __make_reqs(reqs: List[Request], size: int, timeout: Optional[int], in
     :param exception_handler: Function to report a failed (with exceptions) response (passes exception as parameter)
     :param success_handler: Function to report a succeeded (with no exceptions) response (passes Response object as
       parameter)
+    :param verify_ssl: Must SSLContext be generated to verify an SSL connection or not
     :return: List with Response objects
     """
     sem = asyncio.Semaphore(size)  # Usage in __execReq()
-    ssl = create_default_context()  # Create SSL Context
+    ssl = None
+    if verify_ssl:
+        ssl = create_default_context()  # Create SSL Context
     async with ClientSession(timeout=ClientTimeout(total=timeout)) as sess:  # Create requests session
         fut = asyncio.gather(
             *[asyncio.ensure_future(
-                __exec_req(sem, sess, req, ssl, include_content, exception_handler, success_handler))
+                __exec_req(sem, sess, req, ssl, include_content, exception_handler, success_handler, verify_ssl))
                 for req in reqs])  # Create a task for each request
         resp = await fut  # Asynchronously execute them
     return resp  # Return Response objects
@@ -348,7 +351,7 @@ async def __make_reqs(reqs: List[Request], size: int, timeout: Optional[int], in
 
 def map(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = None,
         include_content: Optional[bool] = True,
-        exception_handler=None, success_handler=None) -> List[Response]:
+        exception_handler=None, success_handler=None, verify_ssl: Optional[bool] = True) -> List[Response]:
     """
     Map (start) asynchronous requests and get a list of responses
 
@@ -359,6 +362,7 @@ def map(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = 
     :param exception_handler: Function to report a failed (with exceptions) response (passes exception as parameter)
     :param success_handler: Function to report a succeeded (with no exceptions) response (passes Response object as
       parameter)
+    :param verify_ssl: Must SSLContext be generated to verify an SSL connection or not
     :return: List with Response objects
     """
     valid_reqs = []
@@ -370,7 +374,8 @@ def map(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = 
     # for each one
     asyncio.set_event_loop(loop)  # Set new loop for current thread
     fut = asyncio.gather(asyncio.ensure_future(
-        __make_reqs(valid_reqs, size, timeout, include_content, exception_handler, success_handler)))  # Start
+        __make_reqs(valid_reqs, size, timeout, include_content, exception_handler, success_handler,
+                    verify_ssl)))  # Start
     # asynchronous execution
     resp = loop.run_until_complete(fut)
     loop.close()
@@ -378,7 +383,7 @@ def map(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = 
 
 
 def __threaded(executor: ThreadExecutor, reqs, size, timeout, include_content, exception_handler,
-               success_handler) -> None:
+               success_handler, verify_ssl, finished_handler) -> None:
     """
     Thread runner for mapThreaded(). Do not use yourself, use mapThreaded() instead
 
@@ -390,16 +395,21 @@ def __threaded(executor: ThreadExecutor, reqs, size, timeout, include_content, e
     :param exception_handler: Function to report a failed (with exceptions) response (passes exception as parameter)
     :param success_handler: Function to report a succeeded (with no exceptions) response (passes Response object as
       parameter)
+    :param verify_ssl: Must SSLContext be generated to verify an SSL connection or not
+    :param finished_handler: Function to pass full Response objects list to
     """
     executor.start()  # Let the executor know who he deals with
-    resp = map(reqs, size, timeout, include_content, exception_handler, success_handler)  # Map requests in separate
-    # thread
+    resp = map(reqs, size, timeout, include_content, exception_handler, success_handler, verify_ssl)
+    # Map requests in separate thread
+    if finished_handler is not None:
+        Thread(target=finished_handler, args=[resp]).start()
     executor.set_data(resp)  # Set data for return and exit
 
 
 def map_threaded(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = None,
                  include_content: Optional[bool] = True,
-                 exception_handler=None, success_handler=None) -> ThreadExecutor:
+                 exception_handler=None, success_handler=None, verify_ssl: Optional[bool] = True,
+                 finished_handler=None) -> ThreadExecutor:
     """
     Threaded execution of asynchronous requests. Returns a ThreadExecutor
 
@@ -410,10 +420,12 @@ def map_threaded(reqs: List[Request], size: Optional[int] = 10, timeout: Optiona
     :param exception_handler: Function to report a failed (with exceptions) response (passes exception as parameter)
     :param success_handler: Function to report a succeeded (with no exceptions) response (passes Response object as
       parameter)
+    :param verify_ssl: Must SSLContext be generated to verify an SSL connection or not
+    :param finished_handler: Function to pass full Response objects list to
     :return: ThreadExecutor
     """
     executor = ThreadExecutor()
-    t = Thread(target=__threaded,
-               args=[executor, reqs, size, timeout, include_content, exception_handler, success_handler])
-    t.start()
+    Thread(target=__threaded,
+           args=[executor, reqs, size, timeout, include_content, exception_handler, success_handler, verify_ssl,
+                 finished_handler]).start()
     return executor

@@ -53,8 +53,8 @@ Method | Description | Returns
 `get(url, params, headers, proxies)` | HTTP GET Method. Generates and returns a Request object | `Request` object
 `post(url, params, headers, data, json)` | HTTP POST Method. Generates and returns a Request object | `Request` object
 `head`, `options`, `put`, `delete`, `patch` | Other HTTP methods. Parameters available in docstring | `Request` object
-`map(reqs, size, timeout, include_content, exception_handler, success_handler)` | Map (start) asynchronous requests and get a list of responses | List with `Response` objects
-`map_threaded(reqs, size, timeout, include_content, exception_handler, success_handler)` | Threaded execution of asynchronous requests. Returns a ThreadExecutor | `ThreadExecutor` object
+`map(reqs, size, timeout, include_content, exception_handler, success_handler, verify_ssl)` | Map (start) asynchronous requests and get a list of responses | List with `Response` objects
+`map_threaded(reqs, size, timeout, include_content, exception_handler, success_handler, verify_ssl, finished_handler)` | Threaded execution of asynchronous requests. Returns a ThreadExecutor | `ThreadExecutor` object
 
 #### Response class attributes
 
