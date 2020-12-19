@@ -1,7 +1,7 @@
 import asyncio
 from aiohttp import ClientSession, ClientTimeout
 from ssl import create_default_context, SSLContext
-import json
+from json import loads
 from aiohttp_socks import ProxyConnector
 from threading import Thread, currentThread
 from typing import List, Optional, Union, Any, Dict, Tuple
@@ -34,7 +34,7 @@ class Response:
 
         :return: JSON Object as dict
         """
-        return json.loads(self.text)
+        return loads(self.text)
 
     def __repr__(self) -> str:
         """
