@@ -101,8 +101,7 @@ class ThreadExecutor:
 
 class Request:
     def __init__(self, method: str, url: str, params: Union[dict, tuple], data: Union[dict, tuple, str],
-                 json: Optional[dict], headers: Optional[dict], proxies: Union[dict, str],
-                 skip_headers: Optional[list]):
+                 json: Optional[dict], headers: Optional[dict], skip_headers: Optional[list]):
         """
         Request class(es) getting passed to map() function
 
@@ -110,7 +109,6 @@ class Request:
         :param url: URL to request
         :param params: Query params to add to url
         :param headers: Headers as dict
-        :param proxies: Proxies as dict or string
         :param data: POST data as dict (Content-Type: urlencoded) or string (Content-Type: text/plain)
         :param json: JSON POST data (Content-Type: application/json)
         :param skip_headers: Set automatically. Which headers not to generate automatically
@@ -121,7 +119,6 @@ class Request:
         self.data = data
         self.json = json
         self.headers = headers
-        self.proxies = proxies
         self.skip_headers = skip_headers
 
     def __repr__(self):
@@ -148,8 +145,7 @@ def __startswith(word: str, _list: list) -> bool:
 
 
 def request(method: str, url: str, params: Union[dict, tuple] = None, data: Union[dict, str] = None,
-            json: Optional[dict] = None,
-            headers: Optional[dict] = None, proxies: Union[dict, str] = None,
+            json: Optional[dict] = None, headers: Optional[dict] = None,
             skip_headers: Optional[list] = None) -> Optional[Request]:
     """
     Create a Request with specified method and parameters. Used by many methods in this lib
@@ -158,7 +154,6 @@ def request(method: str, url: str, params: Union[dict, tuple] = None, data: Unio
     :param url: URL to request
     :param params: Query params to add to url
     :param headers: Headers as dict
-    :param proxies: Proxies as dict or string
     :param data: POST data as dict (Content-Type: urlencoded) or string (Content-Type: text/plain)
     :param json: JSON POST data (Content-Type: application/json)
     :param skip_headers: Set automatically. Which headers not to generate automatically
@@ -168,120 +163,63 @@ def request(method: str, url: str, params: Union[dict, tuple] = None, data: Unio
         skip_headers = []  # Mutable object, can't be set to list by default as parameter, must be done here
     if data is None and json is None:
         skip_headers.append('Content-Type')  # Otherwise "octet-stream" content type would be set
-    if method.upper() not in ['POST', 'GET', 'PUT', 'HEAD', 'OPTIONS', 'DELETE', 'PATCH']:
+    if method.upper() not in ['POST', 'GET', 'PUT', 'DELETE']:
         return None
-    if proxies is not None:
-        if isinstance(proxies, dict):  # Format: {'https': 'socks4(5)://...' or 'https://...'}
-            proxies = list(proxies.values())[0]  # Get the first value -> only the proxy string
-        if not __startswith(proxies, ['http', 'https', 'socks4', 'socks5']):
-            proxies = None
-        else:
-            proxies = ProxyConnector.from_url(proxies)
-    return Request(method.upper(), url, params, data, json, headers, proxies, skip_headers)
+    return Request(method.upper(), url, params, data, json, headers, skip_headers)
 
 
-def get(url: str, params: Union[dict, tuple] = None, headers: Optional[dict] = None,
-        proxies: Union[dict, str] = None) -> Request:
+def get(url: str, params: Union[dict, tuple] = None, headers: Optional[dict] = None) -> Request:
     """
     HTTP GET Method. Generates and returns a Request object
 
     :param url: URL to request
     :param params: Query params to add to url
     :param headers: Headers as dict
-    :param proxies: Proxies as dict or string
     :return: Request object
     """
-    return request('GET', url=url, params=params, headers=headers, proxies=proxies)
+    return request('GET', url=url, params=params, headers=headers)
 
 
-def head(url: str, params: Union[dict, tuple] = None, headers: Optional[dict] = None,
-         proxies: Union[dict, str] = None) -> Request:
-    """
-    HTTP HEAD Method. Generates and returns a Request object
-
-    :param url: URL to request
-    :param params: Query params to add to url
-    :param headers: Headers as dict
-    :param proxies: Proxies as dict or string
-    :return: Request object
-    """
-    return request('HEAD', url=url, params=params, headers=headers, proxies=proxies)
-
-
-def options(url: str, params: Union[dict, tuple] = None, headers: Optional[dict] = None,
-            proxies: Union[dict, str] = None) -> Request:
-    """
-    HTTP OPTIONS Method. Generates and returns a Request object
-
-    :param url: URL to request
-    :param params: Query params to add to url
-    :param headers: Headers as dict
-    :param proxies: Proxies as dict or string
-    :return: Request object
-    """
-    return request('OPTIONS', url=url, params=params, headers=headers, proxies=proxies)
-
-
-def delete(url: str, params: Union[dict, tuple] = None, headers: Optional[dict] = None,
-           proxies: Union[dict, str] = None) -> Request:
+def delete(url: str, params: Union[dict, tuple] = None, headers: Optional[dict] = None) -> Request:
     """
     HTTP DELETE Method. Generates and returns a Request object
 
     :param url: URL to request
     :param params: Query params to add to url
     :param headers: Headers as dict
-    :param proxies: Proxies as dict or string
     :return: Request object
     """
-    return request('DELETE', url=url, params=params, headers=headers, proxies=proxies)
+    return request('DELETE', url=url, params=params, headers=headers)
 
 
 def post(url: str, params: Union[dict, tuple] = None, data: Union[dict, str] = None, json: Optional[dict] = None,
-         headers: Optional[dict] = None, proxies: Union[dict, str] = None) -> Request:
+         headers: Optional[dict] = None) -> Request:
     """
     HTTP POST Method. Generates and returns a Request object
 
     :param url: URL to request
     :param params: Query params to add to url
     :param headers: Headers as dict
-    :param proxies: Proxies as dict or string
     :param data: POST data as dict (Content-Type: urlencoded) or string (Content-Type: text/plain)
     :param json: JSON POST data (Content-Type: application/json)
     :return: Request object
     """
-    return request('POST', url=url, params=params, data=data, json=json, headers=headers, proxies=proxies)
-
-
-def patch(url: str, params: Union[dict, tuple] = None, data: Union[dict, str] = None, json: Optional[dict] = None,
-          headers: Optional[dict] = None, proxies: Union[dict, str] = None) -> Request:
-    """
-    HTTP PATCH Method. Generates and returns a Request object
-
-    :param url: URL to request
-    :param params: Query params to add to url
-    :param headers: Headers as dict
-    :param proxies: Proxies as dict or string
-    :param data: PATCH data as dict (Content-Type: urlencoded) or string (Content-Type: text/plain)
-    :param json: JSON PATCH data (Content-Type: application/json)
-    :return: Request object
-    """
-    return request('PATCH', url=url, params=params, data=data, json=json, headers=headers, proxies=proxies)
+    return request('POST', url=url, params=params, data=data, json=json, headers=headers)
 
 
 def put(url: str, params: Union[dict, tuple] = None, data: Union[dict, str] = None, json: Optional[dict] = None,
-        headers: Optional[dict] = None, proxies: Union[dict, str] = None) -> Request:
+        headers: Optional[dict] = None) -> Request:
     """
     HTTP PUT Method. Generates and returns a Request object
 
     :param url: URL to request
     :param params: Query params to add to url
     :param headers: Headers as dict
-    :param proxies: Proxies as dict or string
     :param data: PUT data as dict (Content-Type: urlencoded) or string (Content-Type: text/plain)
     :param json: JSON PUT data (Content-Type: application/json)
     :return: Request object
     """
-    return request('PUT', url=url, params=params, data=data, json=json, headers=headers, proxies=proxies)
+    return request('PUT', url=url, params=params, data=data, json=json, headers=headers)
 
 
 async def __exec_req(sem: asyncio.Semaphore, sess: ClientSession, req: Request, ssl: SSLContext, include_content: bool,
@@ -304,9 +242,9 @@ async def __exec_req(sem: asyncio.Semaphore, sess: ClientSession, req: Request, 
     :return: Response object
     """
     try:
-        async with sem, sess.request(method=req.method, url=req.url, params=req.params, data=req.data, json=req.json,
-                                     headers=req.headers, proxy=req.proxies, skip_auto_headers=req.skip_headers,
-                                     ssl=ssl, verify_ssl=verify_ssl) as resp:
+        async with sem, sess.request(method=req.method, url=req.url, params=req.params,
+                                     data=req.data, json=req.json, headers=req.headers, ssl=ssl,
+                                     skip_auto_headers=req.skip_headers, verify_ssl=verify_ssl) as resp:
             # Semaphore used to control amount of connections per once. Make request and perform actions
             content = None
             if include_content:
@@ -322,7 +260,7 @@ async def __exec_req(sem: asyncio.Semaphore, sess: ClientSession, req: Request, 
 
 
 async def __make_reqs(reqs: List[Request], size: int, timeout: Optional[int], include_content: bool, exception_handler,
-                      success_handler, verify_ssl: bool) -> List[Response]:
+                      success_handler, verify_ssl: bool, proxies: str) -> List[Response]:
     """
     Asynchronous runner for map() function. Do not start it yourself, use map() instead
 
@@ -334,24 +272,32 @@ async def __make_reqs(reqs: List[Request], size: int, timeout: Optional[int], in
     :param success_handler: Function to report a succeeded (with no exceptions) response (passes Response object as
       parameter)
     :param verify_ssl: Must SSLContext be generated to verify an SSL connection or not
+    :param proxies: String with proxy [http, socks4, socks5]
     :return: List with Response objects
     """
+    proxy_connector = None
+    if isinstance(proxies, str):
+        proxy_connector = ProxyConnector.from_url(proxies)
+
     sem = asyncio.Semaphore(size)  # Usage in __execReq()
+
     ssl = None
     if verify_ssl:
         ssl = create_default_context()  # Create SSL Context
-    async with ClientSession(timeout=ClientTimeout(total=timeout)) as sess:  # Create requests session
+
+    async with ClientSession(connector=proxy_connector, timeout=ClientTimeout(total=timeout)) as sess:  # Create session
         fut = asyncio.gather(
             *[asyncio.ensure_future(
-                __exec_req(sem, sess, req, ssl, include_content, exception_handler, success_handler, verify_ssl))
-                for req in reqs])  # Create a task for each request
+                __exec_req(sem, sess, req, ssl, include_content, exception_handler, success_handler, verify_ssl)
+            ) for req in reqs]
+        )  # Create a task for each request
         resp = await fut  # Asynchronously execute them
     return resp  # Return Response objects
 
 
 def map(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = None,
-        include_content: Optional[bool] = True,
-        exception_handler=None, success_handler=None, verify_ssl: Optional[bool] = True) -> List[Response]:
+        include_content: Optional[bool] = True, exception_handler=None, success_handler=None,
+        verify_ssl: Optional[bool] = True, proxies: str = None) -> List[Response]:
     """
     Map (start) asynchronous requests and get a list of responses
 
@@ -363,6 +309,7 @@ def map(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = 
     :param success_handler: Function to report a succeeded (with no exceptions) response (passes Response object as
       parameter)
     :param verify_ssl: Must SSLContext be generated to verify an SSL connection or not
+    :param proxies: String with proxy [http, socks4, socks5]
     :return: List with Response objects
     """
     valid_reqs = []
@@ -370,15 +317,24 @@ def map(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = 
         if req is None or not req.url:
             continue
         valid_reqs.append(req)
-    loop = asyncio.new_event_loop()  # As this function might be used in separate Thread, we have to create a new loop
-    # for each one
+
+    # As this function might be used in separate Thread, we have to create a new loop for each one
+    loop = asyncio.new_event_loop()
+
     asyncio.set_event_loop(loop)  # Set new loop for current thread
-    fut = asyncio.gather(asyncio.ensure_future(
-        __make_reqs(valid_reqs, size, timeout, include_content, exception_handler, success_handler,
-                    verify_ssl)))  # Start
+
+    fut = asyncio.gather(
+        asyncio.ensure_future(
+            __make_reqs(
+                valid_reqs, size, timeout, include_content, exception_handler, success_handler, verify_ssl, proxies
+            )
+        )
+    )  # Start
+
     # asynchronous execution
     resp = loop.run_until_complete(fut)
     loop.close()
+
     return resp[0]  # Format [[Response, Response...]], this is why we return resp[0] -> only the Responses
 
 
@@ -399,17 +355,18 @@ def __threaded(executor: ThreadExecutor, reqs, size, timeout, include_content, e
     :param finished_handler: Function to pass full Response objects list to
     """
     executor.start()  # Let the executor know who he deals with
-    resp = map(reqs, size, timeout, include_content, exception_handler, success_handler, verify_ssl)
+
     # Map requests in separate thread
+    resp = map(reqs, size, timeout, include_content, exception_handler, success_handler, verify_ssl)
+
     if finished_handler is not None:
         Thread(target=finished_handler, args=[resp]).start()
     executor.set_data(resp)  # Set data for return and exit
 
 
 def map_threaded(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = None,
-                 include_content: Optional[bool] = True,
-                 exception_handler=None, success_handler=None, verify_ssl: Optional[bool] = True,
-                 finished_handler=None) -> ThreadExecutor:
+                 include_content: Optional[bool] = True, exception_handler=None, success_handler=None,
+                 verify_ssl: Optional[bool] = True, finished_handler=None) -> ThreadExecutor:
     """
     Threaded execution of asynchronous requests. Returns a ThreadExecutor
 
@@ -425,7 +382,11 @@ def map_threaded(reqs: List[Request], size: Optional[int] = 10, timeout: Optiona
     :return: ThreadExecutor
     """
     executor = ThreadExecutor()
-    Thread(target=__threaded,
-           args=[executor, reqs, size, timeout, include_content, exception_handler, success_handler, verify_ssl,
-                 finished_handler]).start()
+
+    Thread(
+        target=__threaded,
+        args=[executor, reqs, size, timeout, include_content,
+              exception_handler, success_handler, verify_ssl, finished_handler]
+    ).start()
+
     return executor

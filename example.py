@@ -1,23 +1,18 @@
-import grequests as gr  # pip install grequests
 from time import perf_counter  # Time measurement
 import gachi_http as gh  # Library itself
-import requests as r
+
+
+def bad(a, b):
+    print(a, b)
 
 
 def success(resp):  # Success handler to prove it's async
     print(resp)
 
 
-reqs = [gh.get(f"https://google.com?i={i}") for i in range(10)]  # Get google 10 times with different parameter values
+prx = "socks5://3405kp:0u45dM@194.124.49.104:8000"
+
+reqs = [gh.get(f"https://ya.ru?i={i}") for i in range(10)]  # Get google 10 times with different parameter values
 start = perf_counter()  # Start "stopwatch"
-resp = gh.map(reqs, success_handler=success)  # Map request (execute)
+resp = gh.map(reqs, proxies=prx)  # Map request (execute)
 print("GachiHTTP:", perf_counter() - start)  # Print time
-
-start = perf_counter()
-reqs = [r.get(f"https://google.com?i={i}") for i in range(10)]
-print("Requests:", perf_counter() - start)
-
-reqs = [gr.get(f"https://google.com?i={i}") for i in range(10)]
-start = perf_counter()
-gr.map(reqs)
-print("GRequests:", perf_counter() - start)
