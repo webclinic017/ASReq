@@ -19,7 +19,7 @@ setup(
     # pip doesn't recognize requirements.txt afaik
     install_requires=require,
     # type annotations were introduced in 3.8, and since major versions break backwards compatibility, we go the safe route of disallowing 4.x
-    python_requires=">=3.8, <4",
+    python_requires=">=3.6, <4",
     # adding the README to pypi
     long_description=long_desc,
     long_description_content_type='text/markdown',
