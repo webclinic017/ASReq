@@ -141,12 +141,10 @@ def __startswith(word: str, _list: list) -> bool:
     :param _list: List of strings word should start with
     :return: Whether the word starts with one of them or not
     """
-    starts = False
     for w in _list:
         if word.startswith(w):
-            starts = True
-            break
-    return starts
+            return True
+    return False
 
 
 def request(method: str, url: str, params: Union[dict, tuple] = None, data: Union[dict, str] = None,
