@@ -14,7 +14,7 @@ with open(require_fp, "r") as f:  # read and split the requirements in requireme
 
 setup(
     name='gachi_http',
-    version='0.0.9',
+    version='0.1.0',
     packages=['gachi_http'],
     # pip doesn't recognize requirements.txt afaik
     install_requires=require,
