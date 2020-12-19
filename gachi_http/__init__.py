@@ -296,7 +296,7 @@ async def __exec_req(sem: asyncio.Semaphore, sess: ClientSession, req: Request, 
     :param req: Request object
     :param ssl: Generated SSL context
     :param include_content: Whether include response content (+decoded Text) or not
-    :param exception_handler: Function to report a failed (with exceptions) response (passes exception as parameter)
+    :param exception_handler: Function to report a failed (with exceptions) response (passes requests&exception as parameter)
     :param success_handler: Function to report a succeeded (with no exceptions) response (passes Response object as
      parameter)
     :return: Response object
@@ -316,7 +316,7 @@ async def __exec_req(sem: asyncio.Semaphore, sess: ClientSession, req: Request, 
             return final
     except Exception as e:
         if exception_handler is not None:
-            Thread(target=exception_handler, args=[e]).start()
+            Thread(target=exception_handler, args=[req, e]).start()
 
 
 async def __make_reqs(reqs: List[Request], size: int, timeout: Optional[int], include_content: bool, exception_handler,
