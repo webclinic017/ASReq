@@ -4,7 +4,7 @@ from ssl import create_default_context, SSLContext
 from json import loads
 from aiohttp_socks import ProxyConnector
 from threading import Thread, currentThread
-from typing import List, Optional, Union, Any, Dict
+from typing import List, Optional, Union, Any, Dict, Tuple
 
 
 class Response:
@@ -76,7 +76,7 @@ class ThreadExecutor:
         """
         self.data = data
 
-    def finished(self) -> Dict[bool, Any]:
+    def finished(self) -> Dict[str, Any]:
         """
         Check if the execution has finished
 
@@ -150,7 +150,7 @@ def __startswith(word: str, _list: list) -> bool:
 def request(method: str, url: str, params: Union[dict, tuple] = None, data: Union[dict, str] = None,
             json: Optional[dict] = None,
             headers: Optional[dict] = None, proxies: Union[dict, str] = None,
-            skip_headers: Optional[list] = None) -> Union[Response, None]:
+            skip_headers: Optional[list] = None) -> Optional[Request]:
     """
     Create a Request with specified method and parameters. Used by many methods in this lib
 
@@ -320,7 +320,9 @@ async def __exec_req(sem: asyncio.Semaphore, sess: ClientSession, req: Request, 
 
 
 async def __make_reqs(reqs: List[Request], size: int, timeout: Optional[int], include_content: bool, exception_handler,
-                      success_handler) -> List[Response]:
+                      success_handler) -> Tuple[
+    Union[BaseException, Any], Union[BaseException, Any], Union[BaseException, Any], Union[BaseException, Any], Union[
+        BaseException, Any]]:
     """
     Asynchronous runner for map() function. Do not start it yourself, use map() instead
 
@@ -396,8 +398,8 @@ def __threaded(executor: ThreadExecutor, reqs, size, timeout, include_content, e
 
 
 def map_threaded(reqs: List[Request], size: Optional[int] = 10, timeout: Optional[int] = None,
-                include_content: Optional[bool] = True,
-                exception_handler=None, success_handler=None) -> ThreadExecutor:
+                 include_content: Optional[bool] = True,
+                 exception_handler=None, success_handler=None) -> ThreadExecutor:
     """
     Threaded execution of asynchronous requests. Returns a ThreadExecutor
 
