@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 from time import perf_counter  # Time measurement
 import gachi_http as gh  # Library itself
 
