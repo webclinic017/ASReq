@@ -1,4 +1,4 @@
-# GachiHTTP
+# ASReq
 
 Asynchronous requests library based on aiohttp and has grequests syntax
 
@@ -8,15 +8,11 @@ Asynchronous requests library based on aiohttp and has grequests syntax
 * Fast (about 8.5x faster than `requests`)
 * Easy-to-use (same syntax as in `grequests`, really similar to `requests`)
 
-## Installation
-
-> pip install gachi_http
-
 ## Basic usage
 
 ```python
 from time import perf_counter  # Time measurement
-import gachi_http as gh  # Library itself
+import asreq as gh  # Library itself
 
 
 def success(resp):  # Success handler to prove it's async
